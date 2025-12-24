@@ -1,0 +1,15 @@
+# Este archivo puede ser copiado como docker-compose.override.yml
+# para personalizar la configuración local sin afectar el repositorio
+
+services:
+  api:
+    environment:
+      # Sobrescribir variables de entorno si es necesario
+      - ASPNETCORE_ENVIRONMENT=Development
+      # - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=incer;Username=admin;Password=tu_password_aqui
+
+  postgres:
+    environment:
+      # Cambiar credenciales de PostgreSQL si es necesario
+      # - POSTGRES_PASSWORD=tu_password_seguro_aqui
+

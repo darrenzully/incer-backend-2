@@ -1,0 +1,183 @@
+:root {
+  --primary-red: #C62828;
+  --primary-red-dark: #B71C1C;
+  --accent-yellow: #FFD600;
+  --white: #FFFFFF;
+  --light-gray: #F5F5F5;
+  --text-dark: #222222;
+  --focus-outline: #FFD600;
+}
+
+body {
+  font-family: 'Roboto', 'Open Sans', Arial, sans-serif;
+  background: var(--light-gray);
+  color: var(--text-dark);
+}
+
+.navbar {
+  background: var(--primary-red) !important;
+  color: var(--white) !important;
+  border-bottom: 3px solid var(--primary-red-dark) !important;
+}
+.navbar .navbar-brand {
+  color: var(--white) !important;
+  font-weight: bold;
+  letter-spacing: 2px;
+  font-size: 1.5rem;
+}
+.navbar .btn-link, .navbar .btn-link:visited {
+  color: var(--white) !important;
+  font-weight: 500;
+  margin-right: 0.5rem;
+}
+.navbar .btn-link:hover, .navbar .btn-link:focus {
+  color: var(--accent-yellow) !important;
+  text-decoration: underline;
+}
+.navbar .btn-outline-danger {
+  border-color: var(--accent-yellow) !important;
+  color: var(--accent-yellow) !important;
+  background: transparent !important;
+}
+.navbar .btn-outline-danger:hover, .navbar .btn-outline-danger:focus {
+  background: var(--accent-yellow) !important;
+  color: var(--primary-red-dark) !important;
+}
+
+.btn-primary {
+  background: var(--primary-red);
+  border-color: var(--primary-red-dark);
+  color: var(--white);
+  font-weight: 500;
+}
+.btn-primary:hover, .btn-primary:focus {
+  background: var(--primary-red-dark);
+  border-color: var(--primary-red);
+  color: var(--accent-yellow);
+}
+
+.btn-secondary {
+  background: var(--white);
+  border: 1px solid var(--primary-red);
+  color: var(--primary-red);
+}
+.btn-secondary:hover, .btn-secondary:focus {
+  background: var(--primary-red);
+  color: var(--white);
+}
+
+.list-group-item {
+  background: var(--white);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 1px 4px rgba(198,40,40,0.07);
+  border: 1px solid #eee;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: 2px solid var(--focus-outline);
+  outline-offset: 2px;
+}
+
+.form-label {
+  color: var(--primary-red-dark);
+  font-weight: 500;
+}
+
+.sidebar {
+  background: var(--primary-red) !important;
+  color: var(--white) !important;
+  min-width: 56px;
+  max-width: 220px;
+  transition: min-width 0.2s, max-width 0.2s;
+  border-right: 3px solid var(--primary-red-dark) !important;
+  z-index: 1030;
+}
+.sidebar.open {
+  min-width: 200px;
+  max-width: 220px;
+}
+.sidebar .nav-link {
+  color: var(--white) !important;
+  font-weight: 500;
+  border-radius: 6px;
+  margin: 0.25rem 0.5rem;
+  padding: 0.75rem 1rem;
+  transition: background 0.15s;
+}
+.sidebar .nav-link.active, .sidebar .nav-link:hover, .sidebar .nav-link:focus {
+  background: var(--primary-red-dark) !important;
+  color: var(--accent-yellow) !important;
+}
+.sidebar .nav-item .text-muted {
+  color: #ffd6d6 !important;
+}
+.sidebar .btn-link {
+  color: var(--accent-yellow) !important;
+  font-size: 1.2rem;
+}
+.sidebar img {
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.topbar {
+  background: var(--primary-red-dark) !important;
+  color: var(--accent-yellow) !important;
+  border-bottom: 3px solid var(--primary-red) !important;
+  min-height: 56px;
+  z-index: 1040;
+}
+.topbar .btn-link, .topbar .btn-link:visited {
+  color: var(--accent-yellow) !important;
+  font-weight: 500;
+}
+.topbar .btn-link:hover, .topbar .btn-link:focus {
+  color: var(--white) !important;
+}
+.topbar .dropdown-menu {
+  background: var(--primary-red-dark) !important;
+  color: var(--accent-yellow) !important;
+  border: 1px solid var(--primary-red);
+}
+.topbar .dropdown-item {
+  color: var(--accent-yellow) !important;
+}
+.topbar .dropdown-item:hover, .topbar .dropdown-item:focus {
+  background: var(--primary-red) !important;
+  color: var(--white) !important;
+}
+.topbar .dropdown-divider {
+  border-color: var(--primary-red);
+}
+
+@media (max-width: 600px) {
+  .navbar .navbar-brand {
+    font-size: 1.1rem;
+  }
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .list-group-item {
+    padding: 1rem 0.5rem;
+  }
+  .btn, .btn-primary, .btn-secondary {
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+  }
+  .sidebar {
+    min-width: 48px;
+    max-width: 120px;
+  }
+  .sidebar.open {
+    min-width: 120px;
+    max-width: 160px;
+  }
+  .topbar {
+    font-size: 0.95rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+} 

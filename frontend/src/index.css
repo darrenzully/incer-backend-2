@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900;
+  }
+  
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-primary-500 border border-primary-500 font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-primary-400 dark:border-primary-400 dark:focus:ring-offset-gray-900;
+  }
+  
+  .btn-accent {
+    @apply bg-accent-400 hover:bg-accent-500 text-gray-900 font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-soft border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:shadow-soft;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-primary-400 dark:focus:border-transparent;
+  }
+  
+  .sidebar-item {
+    @apply flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:bg-primary-600 hover:text-accent-400 dark:hover:bg-gray-800 dark:hover:text-accent-400;
+  }
+  
+  .sidebar-item.active {
+    @apply bg-primary-600 text-accent-400 dark:bg-gray-800 dark:text-accent-400;
+  }
+}
+
+/* Estilos específicos para dark mode en tablas */
+@layer utilities {
+  .dark table tbody tr {
+    background-color: #1f2937 !important;
+  }
+  
+  .dark table tbody tr:hover {
+    background-color: #374151 !important;
+  }
+  
+  .dark table tbody {
+    background-color: #1f2937 !important;
+  }
+  
+  .dark .pagination-container {
+    background-color: #1f2937 !important;
+  }
+  
+  /* Estilos específicos para dark mode en el header */
+  .dark header {
+    background-color: #111827 !important;
+  }
+  
+  .dark header .search-input {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f9fafb !important;
+  }
+  
+  .dark header .search-input::placeholder {
+    color: #9ca3af !important;
+  }
+  
+  /* Estilos específicos para dark mode en dropdowns */
+  .dark .user-dropdown,
+  .dark .notifications-dropdown {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+  }
+  
+  .dark .user-dropdown .dropdown-item,
+  .dark .notifications-dropdown .dropdown-item {
+    background-color: #1f2937 !important;
+    color: #f9fafb !important;
+  }
+  
+  .dark .user-dropdown .dropdown-item:hover,
+  .dark .notifications-dropdown .dropdown-item:hover {
+    background-color: #374151 !important;
+  }
+  
+  /* Estilos específicos para dark mode en el formulario de login */
+  .dark .login-form-container {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+  }
+  
+  .dark .login-form-container input[type="checkbox"] {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+  }
+  
+  /* Estilos específicos para el texto de ayuda en dark mode */
+  .dark .help-text {
+    background-color: #1f2937 !important;
+  }
+  
+  /* Estilos específicos para dark mode en inputs y textboxes */
+  .dark input[type="text"],
+  .dark input[type="email"],
+  .dark input[type="password"],
+  .dark input[type="number"],
+  .dark input[type="date"],
+  .dark input[type="time"],
+  .dark input[type="search"],
+  .dark input[type="tel"],
+  .dark input[type="url"],
+  .dark textarea,
+  .dark select {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f9fafb !important;
+  }
+  
+  .dark input[type="text"]::placeholder,
+  .dark input[type="email"]::placeholder,
+  .dark input[type="password"]::placeholder,
+  .dark input[type="number"]::placeholder,
+  .dark input[type="search"]::placeholder,
+  .dark input[type="tel"]::placeholder,
+  .dark input[type="url"]::placeholder,
+  .dark textarea::placeholder {
+    color: #9ca3af !important;
+  }
+  
+  .dark input[type="text"]:focus,
+  .dark input[type="email"]:focus,
+  .dark input[type="password"]:focus,
+  .dark input[type="number"]:focus,
+  .dark input[type="date"]:focus,
+  .dark input[type="time"]:focus,
+  .dark input[type="search"]:focus,
+  .dark input[type="tel"]:focus,
+  .dark input[type="url"]:focus,
+  .dark textarea:focus,
+  .dark select:focus {
+    background-color: #374151 !important;
+    border-color: #C62828 !important;
+    color: #f9fafb !important;
+  }
+  
+  /* Estilos específicos para contenedores de filtros en dark mode */
+  .dark .bg-white {
+    background-color: #374151 !important;
+  }
+  
+  .dark .border-gray-200 {
+    border-color: #4b5563 !important;
+  }
+}

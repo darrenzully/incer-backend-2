@@ -1,0 +1,86 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: incer-postgres
+    environment:
+      POSTGRES_DB: incer
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: incer1234
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d incer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - incer-network
+
+  # Database Migrations (ejecuta migraciones, seed y reset de secuencias)
+  migrate:
+    build:
+      context: .
+      dockerfile: Incer.Web.Api/Dockerfile.migrate
+    container_name: incer-migrate
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=incer;Username=admin;Password=incer1234
+      - Jwt__Key=clave-super-secreta-demo-1234567890-INCER
+      - Jwt__Issuer=incer-demo
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - incer-network
+    restart: "no"
+
+  # .NET API
+  api:
+    build:
+      context: .
+      dockerfile: Incer.Web.Api/Dockerfile
+    container_name: incer-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=incer;Username=admin;Password=incer1234
+      - Jwt__Key=clave-super-secreta-demo-1234567890-INCER
+      - Jwt__Issuer=incer-demo
+      - AppSettings__ApiAddress=http://localhost:8080/api/
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - incer-network
+    restart: unless-stopped
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: incer-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - incer-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  incer-network:
+    driver: bridge
+
