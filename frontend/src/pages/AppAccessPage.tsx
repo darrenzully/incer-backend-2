@@ -18,7 +18,8 @@ import { useUsers } from '../hooks/useSecurity';
 
 const AppAccessPage: React.FC = () => {
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'roles'>('users');
+  // Por defecto, la gestión principal es por rol
+  const [activeTab, setActiveTab] = useState<'users' | 'roles'>('roles');
   const [apps, setApps] = useState<App[]>([]);
   const [userAppAccesses, setUserAppAccesses] = useState<UserAppAccess[]>([]);
   const [roleAppAccesses, setRoleAppAccesses] = useState<RoleAppAccess[]>([]);
@@ -139,13 +140,66 @@ const AppAccessPage: React.FC = () => {
   };
 
   const handleView = (access: UserAppAccess | RoleAppAccess) => {
-    // Implementar vista de detalles si es necesario
-    console.log('View access:', access);
+    // Abrir modal de vista
+    setEditingAccess(access);
+    setAccessModalMode('view');
+    setShowAccessModal(true);
   };
 
   const handleEdit = (access: UserAppAccess | RoleAppAccess) => {
-    // Implementar edición si es necesario
-    console.log('Edit access:', access);
+    // Abrir modal de edición
+    setEditingAccess(access);
+    setAccessModalMode('edit');
+    setShowAccessModal(true);
+  };
+
+  // Modal de ver/editar accesos existentes (no es el modal de "crear")
+  const [showAccessModal, setShowAccessModal] = useState(false);
+  const [accessModalMode, setAccessModalMode] = useState<'view' | 'edit'>('view');
+  const [editingAccess, setEditingAccess] = useState<UserAppAccess | RoleAppAccess | null>(null);
+
+  useEffect(() => {
+    if (!showAccessModal || !editingAccess) return;
+    // Precargar campos para edición
+    setAccessLevel(editingAccess.accessLevel || 'limited');
+    setExpiresAt(editingAccess.expiresAt ? editingAccess.expiresAt.slice(0, 16) : '');
+    // selectedApp se usa para "crear"; para editar lo mantenemos como referencia
+    setSelectedApp(editingAccess.appId);
+  }, [showAccessModal, editingAccess]);
+
+  const handleSaveEditAccess = async () => {
+    if (!editingAccess) return;
+    try {
+      const payload = {
+        accessLevel,
+        expiresAt: expiresAt || undefined,
+      };
+
+      if ('userId' in editingAccess) {
+        await appAccessService.updateUserAppAccess(editingAccess.id, payload);
+        setNotification({ type: 'success', message: 'Acceso de usuario actualizado exitosamente' });
+        if (selectedUser) await loadUserAppAccesses(selectedUser);
+      } else {
+        await appAccessService.updateRoleAppAccess(editingAccess.id, payload);
+        setNotification({ type: 'success', message: 'Acceso de rol actualizado exitosamente' });
+        if (selectedRole) await loadRoleAppAccesses(selectedRole);
+      }
+      setShowAccessModal(false);
+      setEditingAccess(null);
+    } catch (error) {
+      console.error('Error updating access:', error);
+      setNotification({ type: 'error', message: 'Error al actualizar acceso' });
+    }
+  };
+
+  const selectUser = async (userId: number) => {
+    setSelectedUser(userId);
+    await loadUserAppAccesses(userId);
+  };
+
+  const selectRole = async (roleId: number) => {
+    setSelectedRole(roleId);
+    await loadRoleAppAccesses(roleId);
   };
 
   const handleNewUserAccess = (userId?: number) => {
@@ -397,6 +451,59 @@ const AppAccessPage: React.FC = () => {
     },
   ];
 
+  // Listados (layout estándar con DataTable)
+  const userListColumns = [
+    {
+      key: 'nombreCompleto',
+      label: 'Usuario',
+      sortable: true,
+      render: (_: any, row: any) => (
+        <div className="flex items-center">
+          <div className="flex-shrink-0 h-10 w-10">
+            <div className="h-10 w-10 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
+              <UserIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+            </div>
+          </div>
+          <div className="ml-4 min-w-0">
+            <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              {row.nombreCompleto || `${row.apellido || ''} ${row.nombre || ''}`.trim() || row.alias || 'Usuario'}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {row.mail || row.email || ''}
+            </div>
+          </div>
+        </div>
+      )
+    },
+    { key: 'alias', label: 'Alias', sortable: true, render: (v: string) => <span className="text-sm text-gray-700 dark:text-gray-200">{v || '-'}</span> },
+    { key: 'roleId', label: 'Rol', sortable: true, render: (_: any, row: any) => <span className="text-sm text-gray-700 dark:text-gray-200">{row.role?.name || row.role?.Name || row.roleName || row.roleId}</span> },
+  ];
+
+  const roleListColumns = [
+    {
+      key: 'name',
+      label: 'Rol',
+      sortable: true,
+      render: (value: string, row: Role) => (
+        <div className="flex items-center">
+          <div className="flex-shrink-0 h-10 w-10">
+            <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+              <ShieldCheckIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+          <div className="ml-4 min-w-0">
+            <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              {value}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {row.description}
+            </div>
+          </div>
+        </div>
+      )
+    }
+  ];
+
   const handleCreateAccess = async () => {
     if (!selectedApp) {
       setNotification({ type: 'error', message: 'Por favor selecciona una aplicación' });
@@ -563,17 +670,6 @@ const AppAccessPage: React.FC = () => {
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8">
           <button
-            onClick={() => setActiveTab('users')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'users'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-            }`}
-          >
-            <UserGroupIcon className="h-5 w-5 inline mr-2" />
-            Accesos por Usuario
-          </button>
-          <button
             onClick={() => setActiveTab('roles')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'roles'
@@ -584,99 +680,51 @@ const AppAccessPage: React.FC = () => {
             <ShieldCheckIcon className="h-5 w-5 inline mr-2" />
             Accesos por Rol
           </button>
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'users'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+            }`}
+          >
+            <UserGroupIcon className="h-5 w-5 inline mr-2" />
+            Accesos por Usuario
+          </button>
         </nav>
       </div>
 
       {/* Content */}
       {activeTab === 'users' ? (
         <div className="space-y-6">
-          {/* Users List */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Usuarios
-              </h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Selecciona un usuario para ver sus accesos a aplicaciones
-              </p>
-            </div>
             <div className="p-6">
-              {usersLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto"></div>
-                  <p className="mt-2 text-gray-500 dark:text-gray-400">Cargando usuarios...</p>
-                </div>
-              ) : users.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <UserGroupIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>No hay usuarios disponibles</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {users.map((user) => (
-                    <div
-                      key={user.id}
-                      onClick={() => {
-                        setSelectedUser(user.id);
-                        loadUserAppAccesses(user.id);
-                      }}
-                      className={`p-6 border rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        selectedUser === user.id
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-lg'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <div className="flex flex-col space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="flex-shrink-0 h-12 w-12">
-                              <div className="h-12 w-12 rounded-xl bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                                <UserIcon className="h-7 w-7 text-primary-600 dark:text-primary-400" />
-                              </div>
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                {user.apellido && user.nombre ? (
-                                  <>
-                                    <div className="truncate">{user.apellido}</div>
-                                    <div className="truncate">{user.nombre}</div>
-                                  </>
-                                ) : (
-                                  <div className="truncate">{user.nombreCompleto || user.alias}</div>
-                                )}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                                {user.alias && user.alias !== user.nombreCompleto && (
-                                  <div className="font-medium text-primary-600 dark:text-primary-400">
-                                    @{user.alias}
-                                  </div>
-                                )}
-                                {user.mail && (
-                                  <div className="truncate text-[10px] text-gray-400 dark:text-gray-500 font-light">
-                                    {user.mail}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex justify-end">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNewUserAccess(user.id);
-                            }}
-                            className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
-                          >
-                            <PlusIcon className="h-4 w-4 mr-1.5" />
-                            Agregar Acceso
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <DataTable
+                data={users}
+                columns={userListColumns}
+                title="Usuarios"
+                searchPlaceholder="Buscar usuarios..."
+                itemsPerPage={10}
+                loading={usersLoading}
+                emptyMessage="No hay usuarios disponibles"
+                actions={[
+                  {
+                    label: 'Ver',
+                    icon: EyeIcon,
+                    onClick: (row: any) => selectUser(row.id),
+                    className: 'text-gray-400 hover:text-blue-500'
+                  },
+                  {
+                    label: 'Editar accesos',
+                    icon: PencilIcon,
+                    onClick: (row: any) => {
+                      selectUser(row.id);
+                      handleNewUserAccess(row.id);
+                    },
+                    className: 'text-gray-400 hover:text-yellow-500'
+                  }
+                ]}
+              />
             </div>
           </div>
 
@@ -752,77 +800,34 @@ const AppAccessPage: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Roles List */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Roles
-              </h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Selecciona un rol para ver sus accesos a aplicaciones
-              </p>
-            </div>
             <div className="p-6">
-              {loadingRoles ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto"></div>
-                  <p className="mt-2 text-gray-500 dark:text-gray-400">Cargando roles...</p>
-                </div>
-              ) : roles.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <ShieldCheckIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>No hay roles disponibles</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {roles.map((role) => (
-                    <div
-                      key={role.id}
-                      onClick={() => {
-                        setSelectedRole(role.id);
-                        loadRoleAppAccesses(role.id);
-                      }}
-                      className={`p-6 border rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        selectedRole === role.id
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <div className="flex flex-col h-full">
-                        <div className="flex items-start justify-between flex-1">
-                          <div className="flex items-center space-x-3">
-                            <div className="flex-shrink-0 h-12 w-12">
-                              <div className="h-12 w-12 rounded-xl bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-                                <ShieldCheckIcon className="h-7 w-7 text-blue-600 dark:text-blue-400" />
-                              </div>
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                <div className="truncate">{role.name}</div>
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                                <div className="break-words leading-relaxed">{role.description}</div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex justify-end mt-4">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNewRoleAccess(role.id);
-                            }}
-                            className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                          >
-                            <PlusIcon className="h-4 w-4 mr-1.5" />
-                            Agregar Acceso
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <DataTable
+                data={roles}
+                columns={roleListColumns}
+                title="Roles"
+                searchPlaceholder="Buscar roles..."
+                itemsPerPage={10}
+                loading={loadingRoles}
+                emptyMessage="No hay roles disponibles"
+                actions={[
+                  {
+                    label: 'Ver',
+                    icon: EyeIcon,
+                    onClick: (row: Role) => selectRole(row.id),
+                    className: 'text-gray-400 hover:text-blue-500'
+                  },
+                  {
+                    label: 'Editar accesos',
+                    icon: PencilIcon,
+                    onClick: (row: Role) => {
+                      selectRole(row.id);
+                      handleNewRoleAccess(row.id);
+                    },
+                    className: 'text-gray-400 hover:text-yellow-500'
+                  }
+                ]}
+              />
             </div>
           </div>
 
@@ -1006,6 +1011,74 @@ const AppAccessPage: React.FC = () => {
               >
                 Asignar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ver/Editar Acceso */}
+      {showAccessModal && editingAccess && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              {accessModalMode === 'view' ? 'Detalle de Acceso' : 'Editar Acceso'}
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Aplicación</label>
+                <input
+                  value={`${editingAccess.appName} (${editingAccess.appCode})`}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nivel de Acceso</label>
+                <select
+                  value={accessLevel}
+                  onChange={(e) => setAccessLevel(e.target.value)}
+                  disabled={accessModalMode === 'view'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="readonly">Solo Lectura</option>
+                  <option value="limited">Limitado</option>
+                  <option value="full">Completo</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha de Expiración (Opcional)</label>
+                <input
+                  type="datetime-local"
+                  value={expiresAt}
+                  onChange={(e) => setExpiresAt(e.target.value)}
+                  disabled={accessModalMode === 'view'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => {
+                  setShowAccessModal(false);
+                  setEditingAccess(null);
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                Cerrar
+              </button>
+
+              {accessModalMode === 'edit' && (
+                <button
+                  onClick={handleSaveEditAccess}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                >
+                  Guardar
+                </button>
+              )}
             </div>
           </div>
         </div>

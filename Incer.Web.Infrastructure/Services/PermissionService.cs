@@ -155,24 +155,42 @@ namespace Incer.Web.Infrastructure.Services
         public async Task<IEnumerable<Permission>> GetUserPermissionsAsync(int userId, int? appId = null)
         {
             Console.WriteLine($"GetUserPermissionsAsync - userId: {userId}, appId: {appId}");
-            
-            var query = _context.Permissions
-                .Include(p => p.RolePermissions)
-                .ThenInclude(rp => rp.Role)
-                .ThenInclude(r => r.Users)
-                .Where(p => p.Activo && p.RolePermissions.Any(rp => 
-                    rp.IsGranted && 
-                    rp.Role.Users.Any(u => u.Id == userId)));
-            
+
+            // Importante: evitar depender de navegación Role.Users (hay warnings de EF por shadow properties),
+            // y resolver permisos por RoleId directo del usuario.
+            var roleId = await _context.Users
+                .Where(u => u.Id == userId && u.Activo)
+                .Select(u => (int?)u.RoleId)
+                .FirstOrDefaultAsync();
+
+            if (!roleId.HasValue || roleId.Value <= 0)
+            {
+                Console.WriteLine($"GetUserPermissionsAsync - No se encontró RoleId válido para userId {userId}");
+                return Enumerable.Empty<Permission>();
+            }
+
+            var rpQuery = _context.RolePermissions
+                .AsNoTracking()
+                .Include(rp => rp.Permission)
+                .Where(rp =>
+                    rp.RoleId == roleId.Value &&
+                    rp.Activo &&
+                    rp.IsGranted &&
+                    rp.Permission != null &&
+                    rp.Permission.Activo);
+
             // Solo filtrar por aplicación si se especifica un appId
             if (appId.HasValue)
             {
-                query = query.Where(p => p.AppPermissions.Any(ap => ap.AppId == appId.Value && ap.Active));
+                rpQuery = rpQuery.Where(rp => rp.Permission!.AppPermissions.Any(ap => ap.AppId == appId.Value && ap.Active));
             }
-            
-            var permissions = await query.ToListAsync();
-            Console.WriteLine($"GetUserPermissionsAsync - Found {permissions.Count} permissions for user {userId}");
-            
+
+            var permissions = await rpQuery
+                .Select(rp => rp.Permission!)
+                .Distinct()
+                .ToListAsync();
+
+            Console.WriteLine($"GetUserPermissionsAsync - Found {permissions.Count} permissions for user {userId} (roleId={roleId.Value})");
             return permissions;
         }
         

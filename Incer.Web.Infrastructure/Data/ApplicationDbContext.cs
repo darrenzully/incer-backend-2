@@ -9071,6 +9071,238 @@ new OrdenDeTrabajo { Id = 1019, SucursalId = 1, Numero = 20, UsuarioId = 6, Prio
                 OrdenesDeTrabajo.AddRange(ordenesTrabajo ?? new List<OrdenDeTrabajo>());
                 SaveChanges();
             }
+
+            // Asegurar que siempre exista un usuario superadmin con acceso completo.
+            // Esto es idempotente y NO borra datos existentes.
+            EnsureSuperAdmin();
+        }
+
+        /// <summary>
+        /// Asegura un usuario superadmin con permiso global (*:*) y acceso a la app web (preferentemente Code="web"/AppId=1).
+        /// - Idempotente (crea si falta, repara si está desconfigurado)
+        /// - No elimina ni revoca permisos a otros usuarios
+        /// Variables de entorno soportadas:
+        /// - INCER_SUPERADMIN_ALIAS (default: "superadmin")
+        /// - INCER_SUPERADMIN_EMAIL (default: "superadmin@incer.local")
+        /// - INCER_SUPERADMIN_PASSWORD (default: "incer1234" con warning)
+        /// </summary>
+        private void EnsureSuperAdmin()
+        {
+            try
+            {
+                var alias = (Environment.GetEnvironmentVariable("INCER_SUPERADMIN_ALIAS") ?? "superadmin").Trim();
+                var email = (Environment.GetEnvironmentVariable("INCER_SUPERADMIN_EMAIL") ?? "superadmin@incer.local").Trim();
+                var plainPassword = (Environment.GetEnvironmentVariable("INCER_SUPERADMIN_PASSWORD") ?? "").Trim();
+                var forcePassword = string.Equals(
+                    (Environment.GetEnvironmentVariable("INCER_SUPERADMIN_FORCE_PASSWORD") ?? "false").Trim(),
+                    "true",
+                    StringComparison.OrdinalIgnoreCase);
+
+                if (string.IsNullOrWhiteSpace(plainPassword))
+                {
+                    // Fallback solo para facilitar entornos locales/dev si no se configuró env var.
+                    plainPassword = "incer1234";
+                    Console.WriteLine("WARNING: INCER_SUPERADMIN_PASSWORD no está configurada. Usando password por defecto (solo recomendado para desarrollo).");
+                }
+
+                // 1) Asegurar permiso global (*:*)
+                var globalPermission = Permissions.FirstOrDefault(p =>
+                    p.Resource == "*" &&
+                    p.Action == "*" &&
+                    p.Scope == "global");
+
+                if (globalPermission == null)
+                {
+                    globalPermission = new Permission
+                    {
+                        Name = "Acceso Global",
+                        Description = "Acceso completo al sistema",
+                        Resource = "*",
+                        Action = "*",
+                        Scope = "global",
+                        IsSystem = true,
+                        Activo = true,
+                        UsuarioCreacion = "system",
+                        UsuarioUpdate = "system",
+                        FechaCreacion = DateTime.UtcNow,
+                        FechaUpdate = DateTime.UtcNow
+                    };
+                    Permissions.Add(globalPermission);
+                    SaveChanges();
+                }
+                else if (!globalPermission.Activo)
+                {
+                    globalPermission.Activo = true;
+                    globalPermission.UsuarioUpdate = "system";
+                    globalPermission.FechaUpdate = DateTime.UtcNow;
+                    SaveChanges();
+                }
+
+                // 2) Asegurar rol Administrador
+                var adminRole = Roles.FirstOrDefault(r => r.Name.ToLower() == "administrador");
+                if (adminRole == null)
+                {
+                    adminRole = new Role
+                    {
+                        Name = "Administrador",
+                        Description = "Administrador del sistema con acceso completo",
+                        IsSystem = true,
+                        Priority = 100,
+                        Activo = true,
+                        UsuarioCreacion = "system",
+                        UsuarioUpdate = "system",
+                        FechaCreacion = DateTime.UtcNow,
+                        FechaUpdate = DateTime.UtcNow
+                    };
+                    Roles.Add(adminRole);
+                    SaveChanges();
+                }
+                else if (!adminRole.Activo)
+                {
+                    adminRole.Activo = true;
+                    adminRole.UsuarioUpdate = "system";
+                    adminRole.FechaUpdate = DateTime.UtcNow;
+                    SaveChanges();
+                }
+
+                // 3) Asegurar usuario superadmin (buscar incluso si está inactivo para reactivarlo)
+                var user = Users.FirstOrDefault(u => (u.Alias ?? "").ToLower() == alias.ToLower());
+                if (user == null)
+                {
+                    user = new User
+                    {
+                        Nombre = "Super",
+                        Apellido = "Admin",
+                        Alias = alias,
+                        Mail = email,
+                        Clave = HashPassword(plainPassword),
+                        RoleId = adminRole.Id,
+                        Activo = true,
+                        UsuarioCreacion = "system",
+                        UsuarioUpdate = "system",
+                        FechaCreacion = DateTime.UtcNow,
+                        FechaUpdate = DateTime.UtcNow,
+                        IsActive = true
+                    };
+                    Users.Add(user);
+                    SaveChanges();
+                }
+                else
+                {
+                    // Reparar rol/estado si estaba mal (no tocar password salvo force)
+                    var changed = false;
+                    if (user.RoleId != adminRole.Id) { user.RoleId = adminRole.Id; changed = true; }
+                    if (!user.Activo) { user.Activo = true; changed = true; }
+                    if (!user.IsActive) { user.IsActive = true; changed = true; }
+                    if (string.IsNullOrWhiteSpace(user.Mail)) { user.Mail = email; changed = true; }
+                    if (forcePassword)
+                    {
+                        user.Clave = HashPassword(plainPassword);
+                        changed = true;
+                    }
+                    if (changed)
+                    {
+                        user.UsuarioUpdate = "system";
+                        user.FechaUpdate = DateTime.UtcNow;
+                        SaveChanges();
+                    }
+                }
+
+                // 4) Asegurar relación RolePermission (rol admin -> permiso global)
+                // Nota: usar GrantedBy=user.Id para evitar dependencias de un "usuario 1" preexistente.
+                var adminGlobalRp = RolePermissions.FirstOrDefault(rp =>
+                    rp.RoleId == adminRole.Id &&
+                    rp.PermissionId == globalPermission.Id);
+
+                if (adminGlobalRp == null)
+                {
+                    adminGlobalRp = new RolePermission
+                    {
+                        RoleId = adminRole.Id,
+                        PermissionId = globalPermission.Id,
+                        IsGranted = true,
+                        GrantedAt = DateTime.UtcNow,
+                        GrantedBy = user.Id,
+                        Activo = true,
+                        UsuarioCreacion = "system",
+                        UsuarioUpdate = "system",
+                        FechaCreacion = DateTime.UtcNow,
+                        FechaUpdate = DateTime.UtcNow
+                    };
+                    RolePermissions.Add(adminGlobalRp);
+                    SaveChanges();
+                }
+                else
+                {
+                    var changed = false;
+                    if (!adminGlobalRp.IsGranted) { adminGlobalRp.IsGranted = true; changed = true; }
+                    if (!adminGlobalRp.Activo) { adminGlobalRp.Activo = true; changed = true; }
+                    if (adminGlobalRp.GrantedBy <= 0) { adminGlobalRp.GrantedBy = user.Id; changed = true; }
+                    if (changed)
+                    {
+                        adminGlobalRp.UsuarioUpdate = "system";
+                        adminGlobalRp.FechaUpdate = DateTime.UtcNow;
+                        SaveChanges();
+                    }
+                }
+
+                // 5) Asegurar acceso a la app Web para que el middleware no bloquee.
+                var webApp = Applications.FirstOrDefault(a => a.Active && a.Code == "web")
+                             ?? Applications.FirstOrDefault(a => a.Active && a.Id == 1)
+                             ?? Applications.FirstOrDefault(a => a.Active);
+
+                if (webApp != null)
+                {
+                    var existing = UserAppAccesses.FirstOrDefault(uaa =>
+                        uaa.UserId == user.Id &&
+                        uaa.AppId == webApp.Id);
+
+                    if (existing == null)
+                    {
+                        var uaa = new UserAppAccess
+                        {
+                            UserId = user.Id,
+                            AppId = webApp.Id,
+                            AccessLevel = "full",
+                            GrantedAt = DateTime.UtcNow,
+                            GrantedBy = user.Id,
+                            Active = true,
+                            Activo = true,
+                            UsuarioCreacion = "system",
+                            UsuarioUpdate = "system",
+                            FechaCreacion = DateTime.UtcNow,
+                            FechaUpdate = DateTime.UtcNow
+                        };
+                        UserAppAccesses.Add(uaa);
+                        SaveChanges();
+                    }
+                    else
+                    {
+                        var changed = false;
+                        if (!existing.Active) { existing.Active = true; changed = true; }
+                        if (!existing.Activo) { existing.Activo = true; changed = true; }
+                        if (string.IsNullOrWhiteSpace(existing.AccessLevel) || existing.AccessLevel != "full")
+                        {
+                            existing.AccessLevel = "full";
+                            changed = true;
+                        }
+                        if (changed)
+                        {
+                            existing.UsuarioUpdate = "system";
+                            existing.FechaUpdate = DateTime.UtcNow;
+                            SaveChanges();
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("WARNING: No hay Applications activas; no se pudo asegurar UserAppAccess para superadmin.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR EnsureSuperAdmin: {ex.Message}");
+            }
         }
 
     }

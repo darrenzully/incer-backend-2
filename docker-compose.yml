@@ -31,6 +31,11 @@ services:
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=incer;Username=admin;Password=incer1234
       - Jwt__Key=clave-super-secreta-demo-1234567890-INCER
       - Jwt__Issuer=incer-demo
+      - AppSettings__ApiAddress=http://localhost:8080/api/
+      - AppSettings__SendGridApiKey=NotenemosSendGridApiKey
+      - INCER_SUPERADMIN_ALIAS=superadmin
+      - INCER_SUPERADMIN_EMAIL=superadmin@incer.local
+      - INCER_SUPERADMIN_PASSWORD=Incer1234
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,12 +50,16 @@ services:
       dockerfile: Incer.Web.Api/Dockerfile
     container_name: incer-api
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=incer;Username=admin;Password=incer1234
       - Jwt__Key=clave-super-secreta-demo-1234567890-INCER
       - Jwt__Issuer=incer-demo
       - AppSettings__ApiAddress=http://localhost:8080/api/
+      - AppSettings__SendGridApiKey=NotenemosSendGridApiKey
+      - INCER_SUPERADMIN_ALIAS=superadmin
+      - INCER_SUPERADMIN_EMAIL=superadmin@incer.local
+      - INCER_SUPERADMIN_PASSWORD=Incer1234
     ports:
       - "8080:8080"
     depends_on:
@@ -67,6 +76,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=http://localhost:8080
     container_name: incer-frontend
     ports:
       - "3000:80"

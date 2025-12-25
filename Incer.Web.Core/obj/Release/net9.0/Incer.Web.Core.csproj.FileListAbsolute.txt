@@ -1,0 +1,12 @@
+/Users/dariorenzulli/Documents/repos/incer/incer-backend-2/Incer.Web.Core/bin/Release/net9.0/Incer.Web.Core.deps.json
+/Users/dariorenzulli/Documents/repos/incer/incer-backend-2/Incer.Web.Core/bin/Release/net9.0/Incer.Web.Core.dll
+/Users/dariorenzulli/Documents/repos/incer/incer-backend-2/Incer.Web.Core/bin/Release/net9.0/Incer.Web.Core.pdb
+/Users/dariorenzulli/Documents/repos/incer/incer-backend-2/Incer.Web.Core/obj/Release/net9.0/Incer.Web.Core.GeneratedMSBuildEditorConfig.editorconfig
+/Users/dariorenzulli/Documents/repos/incer/incer-backend-2/Incer.Web.Core/obj/Release/net9.0/Incer.Web.Core.AssemblyInfoInputs.cache
+/Users/dariorenzulli/Documents/repos/incer/incer-backend-2/Incer.Web.Core/obj/Release/net9.0/Incer.Web.Core.AssemblyInfo.cs
+/Users/dariorenzulli/Documents/repos/incer/incer-backend-2/Incer.Web.Core/obj/Release/net9.0/Incer.Web.Core.csproj.CoreCompileInputs.cache
+/Users/dariorenzulli/Documents/repos/incer/incer-backend-2/Incer.Web.Core/obj/Release/net9.0/Incer.Web.Core.sourcelink.json
+/Users/dariorenzulli/Documents/repos/incer/incer-backend-2/Incer.Web.Core/obj/Release/net9.0/Incer.Web.Core.dll
+/Users/dariorenzulli/Documents/repos/incer/incer-backend-2/Incer.Web.Core/obj/Release/net9.0/refint/Incer.Web.Core.dll
+/Users/dariorenzulli/Documents/repos/incer/incer-backend-2/Incer.Web.Core/obj/Release/net9.0/Incer.Web.Core.pdb
+/Users/dariorenzulli/Documents/repos/incer/incer-backend-2/Incer.Web.Core/obj/Release/net9.0/ref/Incer.Web.Core.dll

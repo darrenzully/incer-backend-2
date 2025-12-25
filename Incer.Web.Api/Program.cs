@@ -112,7 +112,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// En Docker/Production normalmente servimos HTTP (o HTTPS termina en un proxy).
+// Si habilitamos redirección a HTTPS sin tener HTTPS configurado, rompe los fetch del frontend.
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors();
 

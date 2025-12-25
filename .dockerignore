@@ -14,3 +14,19 @@ frontend/build/
 
 **/.env
 **/.env.*
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/*.suo
+**/*.cache
+
+.git/
+.DS_Store
+
+frontend/node_modules/
+frontend/build/
+
+**/.env
+**/.env.*

@@ -40,13 +40,10 @@ namespace Incer.Web.Api.Controllers
                     return Unauthorized(new { message = "Usuario no válido" });
                 }
 
-                // Obtener centros accesibles del usuario
-                var userCenters = await _userCenterAppAccessRepository.GetByUserIdAsync(userId.Value);
-                Console.WriteLine($"UserCenters encontrados: {userCenters.Count()}");
-                
-                var accessibleCenterIds = userCenters
-                    .Where(uca => uca.Active)
-                    .Select(uca => uca.BusinessCenterId)
+                // IMPORTANT: usar el servicio de permisos para soportar superadmin (*:*)
+                // y también accesos por centro/app cuando corresponda.
+                var currentAppId = GetCurrentAppId();
+                var accessibleCenterIds = (await _permissionService.GetUserAccessibleCentersAsync(userId.Value, currentAppId))
                     .Distinct()
                     .ToList();
                     

@@ -409,11 +409,10 @@ const CalendarPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-          {/* Header del sidebar */}
+    <div className="flex flex-col lg:flex-row gap-6">
+        {/* Panel de filtros (antes estaba implementado como "Sidebar" propio, lo que se veía duplicado con el menú global) */}
+        <div className="lg:w-80 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden flex flex-col">
+          {/* Header del panel */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Calendario</h2>
           </div>
@@ -527,7 +526,7 @@ const CalendarPage: React.FC = () => {
         </div>
 
         {/* Contenido principal del calendario */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Header del calendario */}
           <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between">
@@ -613,7 +612,6 @@ const CalendarPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 };
