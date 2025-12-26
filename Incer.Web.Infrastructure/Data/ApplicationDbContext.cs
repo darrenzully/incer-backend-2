@@ -9090,6 +9090,20 @@ new OrdenDeTrabajo { Id = 1019, SucursalId = 1, Numero = 20, UsuarioId = 6, Prio
         {
             try
             {
+                // Si el seed insertó usuarios con IDs fijos (o se resetearon secuencias tarde),
+                // la secuencia de "Users.Id" puede quedar desfasada y provocar:
+                // 23505 duplicate key value violates unique constraint "PK_Users"
+                // Sincronizamos la secuencia ANTES de intentar crear el superadmin.
+                try
+                {
+                    Database.ExecuteSqlRaw(
+                        "SELECT setval(pg_get_serial_sequence('\"Users\"','Id'), COALESCE((SELECT MAX(\"Id\") FROM \"Users\"), 1), true);");
+                }
+                catch (Exception seqEx)
+                {
+                    Console.WriteLine($"WARNING EnsureSuperAdmin: no se pudo sincronizar secuencia de Users.Id: {seqEx.Message}");
+                }
+
                 var alias = (Environment.GetEnvironmentVariable("INCER_SUPERADMIN_ALIAS") ?? "superadmin").Trim();
                 var email = (Environment.GetEnvironmentVariable("INCER_SUPERADMIN_EMAIL") ?? "superadmin@incer.local").Trim();
                 var plainPassword = (Environment.GetEnvironmentVariable("INCER_SUPERADMIN_PASSWORD") ?? "").Trim();

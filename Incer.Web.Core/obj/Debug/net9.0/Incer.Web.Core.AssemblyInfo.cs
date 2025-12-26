@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Incer.Web.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+92d50a8d0a929d7dbc444d65aed1574abcfe1f3f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4bddb648e778f4584924d3a066c7416556cffb1a")]
 [assembly: System.Reflection.AssemblyProductAttribute("Incer.Web.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Incer.Web.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

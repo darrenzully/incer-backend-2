@@ -145,10 +145,35 @@ namespace Incer.Web.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, User user)
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateUserRequest request)
         {
-            if (id != user.Id) return BadRequest();
-            await _repository.UpdateAsync(user);
+            if (id != request.Id) return BadRequest();
+
+            var existing = await _repository.GetByIdAsync(id);
+            if (existing == null) return NotFound();
+
+            existing.Nombre = string.IsNullOrWhiteSpace(request.Nombre) ? existing.Nombre : request.Nombre;
+            existing.Apellido = string.IsNullOrWhiteSpace(request.Apellido) ? existing.Apellido : request.Apellido;
+            existing.Mail = string.IsNullOrWhiteSpace(request.Mail) ? existing.Mail : request.Mail;
+            existing.Alias = string.IsNullOrWhiteSpace(request.Alias) ? existing.Alias : request.Alias;
+            existing.RoleId = request.RoleId ?? existing.RoleId;
+
+            if (request.Activo.HasValue)
+            {
+                existing.Activo = request.Activo.Value;
+            }
+
+            if (request.IsActive.HasValue)
+            {
+                existing.IsActive = request.IsActive.Value;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Clave))
+            {
+                existing.Clave = request.Clave;
+            }
+
+            await _repository.UpdateAsync(existing);
             return NoContent();
         }
 
@@ -159,6 +184,19 @@ namespace Incer.Web.Api.Controllers
             if (user == null) return NotFound();
             await _repository.DeleteAsync(user);
             return NoContent();
+        }
+
+        public class UpdateUserRequest
+        {
+            public int Id { get; set; }
+            public string? Nombre { get; set; }
+            public string? Apellido { get; set; }
+            public string? Mail { get; set; }
+            public string? Alias { get; set; }
+            public int? RoleId { get; set; }
+            public bool? Activo { get; set; }
+            public bool? IsActive { get; set; }
+            public string? Clave { get; set; }
         }
 
         /// <summary>
